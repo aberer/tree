@@ -34,8 +34,6 @@ using std::set;
 using std::reference_wrapper; 
 using std::exception; 
 
-
-
 template<class DATA>
 class Tree
 {
@@ -45,7 +43,13 @@ class Tree
   
 public:
   Tree();
-
+  
+  // TODO provide const_iterators using either
+  // this trick 
+  // http://www.sj-vs.net/c-implementing-const_iterator-and-non-const-iterator-without-code-duplication/
+  // or meyers evil casting idiom
+  // http://stackoverflow.com/questions/8645760/avoiding-code-duplication-in-const-and-non-const-member-functions
+  
   iterator begin() ;
   iterator end() ;
   /** 
@@ -80,7 +84,10 @@ private:                        // METHODS
   
 private:
   vector<DATA> _nodes;
+  
+  // i dont like this set too much...could also be a sorted vector with std::binary_search? (removal then still kind of expensive)
   vector< set<id_t> > _children;
+  
   vector<id_t> _parent;
   stack<id_t> _unused; 
   id_t _root; 
@@ -92,8 +99,11 @@ private:
 // template<class DATA> typename Tree<DATA>::iterator end( Tree<DATA> &t) {  return t.end(); }
 
 
+
 template<class DATA>
 class Tree<DATA>::iterator
+  : public std::iterator<std::forward_iterator_tag, DATA >
+// Errr...the compiler apparantly does not check, whether we fulfill any interface of a forward iterator (but then,if nobody uses the templates...) 
 {
 public: 
   friend class Tree<DATA>;
