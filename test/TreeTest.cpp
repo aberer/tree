@@ -248,13 +248,41 @@ TEST_F(TreeTest1, eraseTest)
   assertContent( {7,9});
   
   _tree.erase( _tree.begin());
+  assertContent( {9});
 
-  
-  std::cout << "================" << std::endl; 
-  // _tree.begin().next();
-  _tree.begin().next();
-
+  ASSERT_EQ(_tree.size() ,1); 
+  _tree.erase( _tree.begin());
+  ASSERT_EQ(_tree.size(),  0); 
 }
+
+
+TEST_F(TreeTest1, eraseAndInsert)
+{
+  // leaf 
+  _tree.erase(_tree.begin().child().child().sibling());
+  _tree.insert( _tree.begin().child().child(), 18);
+  assertContent( {  3 ,4 , 6, 5, 8, 9, 18 }  );
+
+  _tree.erase(_tree.begin().child());
+  _tree.erase(_tree.begin().child());
+  _tree.erase(_tree.begin().child());
+  _tree.insert(_tree.begin(), 25 );
+  assertContent( { 3 ,25 ,5, 8, 9} ) ;
+  ASSERT_EQ(  _tree.capacity(), 7 );
+
+  // complete erase 
+  while(_tree.size() > 0 )
+    _tree.erase(_tree.begin());
+  
+  _tree.insert(1);
+  assertContent({1});
+
+  _tree.erase(_tree.begin());
+
+  _tree.insert(_tree.begin(),1);
+  assertContent( {1});
+}
+
 
 
 

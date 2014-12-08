@@ -39,36 +39,44 @@ using std::exception;
 template<class DATA>
 class Tree
 {
-  friend class dfs_iterator;
+  friend class iterator;
   using id_t = int;
-  class dfs_iterator; 
+  class iterator; 
   
 public:
   Tree();
 
-  dfs_iterator begin_dfs() { return dfs_iterator(*this, _root); }
-  dfs_iterator end_dfs() { return dfs_iterator(*this, _nodes.size());  }
-  dfs_iterator begin()  {return begin_dfs(); }
-  dfs_iterator end()  { return end_dfs(); }
-  size_t size() const {return _nodes.size();  } // TODO !!! 
+  iterator begin() ;
+  iterator end() ;
+  /** 
+      @brief gets the number of elements inside the container 
+   */ 
+  size_t size() const ;
+  /** 
+      @brief gets the internal capacity before reallocation is necessary  
+   */ 
+  size_t capacity() const {return _nodes.size(); } 
   /** 
       @brief inserts a data point as a child of a the element pointed to by the iterator 
    */ 
-  dfs_iterator insert( dfs_iterator iter, DATA data );
+  iterator insert( iterator iter, DATA data );
   /** 
       @brief inserts an element as root of the tree  
    */ 
-  dfs_iterator insert( DATA data); 
+  iterator insert( DATA data); 
   // just debug 
   void dumplinks();
-
-  dfs_iterator erase(dfs_iterator iterator); 
+  /** 
+      @brief erases the element represented by iterator and returns an
+      iterator pointing to the next element
+   */ 
+  iterator erase(iterator iterator); 
   
 private:                        // METHODS
   /** 
-      @brief TODO  
-   */ 
-  id_t extend( DATA data ); 
+      @brief gets the id of an unused node    
+  */ 
+  id_t allocateNode(); 
   
 private:
   vector<DATA> _nodes;
@@ -80,44 +88,42 @@ private:
 
 
 // auxilliary functions 
-// template<class DATA> typename Tree<DATA>::dfs_iterator begin(Tree<DATA> &t) {  return t.begin(); }
-// template<class DATA> typename Tree<DATA>::dfs_iterator end( Tree<DATA> &t) {  return t.end(); }
+// template<class DATA> typename Tree<DATA>::iterator begin(Tree<DATA> &t) {  return t.begin(); }
+// template<class DATA> typename Tree<DATA>::iterator end( Tree<DATA> &t) {  return t.end(); }
 
 
 template<class DATA>
-class Tree<DATA>::dfs_iterator
+class Tree<DATA>::iterator
 {
 public: 
   friend class Tree<DATA>;
     
-  dfs_iterator(Tree<DATA>& tree, id_t id) : _tree(tree) , _id{id} { }
+  iterator(Tree<DATA>& tree, id_t id) : _tree(tree) , _id{id} { }
   DATA& operator*()  { return _tree.get()._nodes.at(_id); }
   /** 
       @brief gets an iterator pointing to the next element in a DFS traversal  
    */ 
-  dfs_iterator next() ;
-  dfs_iterator& operator++();
+  iterator next() ;
+  iterator& operator++();
   /** 
       @brief gets an iterator pointing to the first child of the current element
    */ 
-  dfs_iterator child();
+  iterator child();
   /** 
       @brief gets an iterator pointing to the next sibling of the current element 
    */ 
-  dfs_iterator sibling() ;
+  iterator sibling() ;
   /** 
       @brief gets an iterator pointing to the parent of the current element 
    */ 
-  dfs_iterator parent(); 
+  iterator parent(); 
   /**
      debug only 
    */ 
   id_t getId() const  {return _id; }
-
   
-  
-  friend bool operator==(dfs_iterator const& lhs, dfs_iterator const& rhs) { return lhs._id == rhs._id; }
-  friend bool operator!=(dfs_iterator const& lhs, dfs_iterator const& rhs){ return not(lhs == rhs); }
+  friend bool operator==(iterator const& lhs, iterator const& rhs) { return lhs._id == rhs._id; }
+  friend bool operator!=(iterator const& lhs, iterator const& rhs){ return not(lhs == rhs); }
 
 private:
   reference_wrapper< Tree<DATA> > _tree;

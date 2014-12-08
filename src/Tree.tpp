@@ -10,42 +10,68 @@ Tree<DATA>::Tree()
 
 
 template<class DATA>
-typename Tree<DATA>::dfs_iterator Tree<DATA>::insert( dfs_iterator iter, DATA data )
+typename Tree<DATA>::iterator Tree<DATA>::begin()
 {
-  bool isRoot = _nodes.empty(); 
-  auto id = extend( data);
-
-  if(not isRoot)
-    {
-      _parent[id] = iter._id;
-      _children[_parent[id]].insert(id);
-    }
-
-  auto siz = size();
-  auto unused = _unused.size(); 
-  assert(siz == _nodes.size() - unused );
-  assert(siz == _children.size() - unused );
-  assert(siz == _parent.size() - unused ); 
-    
-  return dfs_iterator(*this, id);
+  if( size() == 0) 
+    return end();
+  else
+    return iterator(*this, _root);
 }
 
 
 template<class DATA>
-typename Tree<DATA>::dfs_iterator Tree<DATA>::erase(typename Tree<DATA>::dfs_iterator iterator)
+typename Tree<DATA>::iterator Tree<DATA>::end()
 {
-  std::cout << "erasing " << *iterator << std::endl; 
+  return iterator(*this, _nodes.size());
+}
+
+
+template<class DATA>
+size_t Tree<DATA>::size() const
+{
+  return _nodes.size() - _unused.size() ;
+}
+
+
+template<class DATA>
+typename Tree<DATA>::iterator Tree<DATA>::insert( iterator iter, DATA data )
+{
+  auto result = iter; 
   
+  if( size() == 0  )
+    {
+      result =  insert(data);
+    }
+  else 
+    {
+      auto id = allocateNode();
+      _nodes.at(id)= data ; 
+
+      _parent[id] = iter._id;
+      _children[_parent[id]].insert(id);
+
+      auto siz = size();
+      auto unused = _unused.size(); 
+      assert(siz == _nodes.size() - unused );
+      assert(siz == _children.size() - unused );
+      assert(siz == _parent.size() - unused ); 
+    
+      result =  iterator(*this, id);
+    }
+  
+  return result ; 
+}
+
+
+template<class DATA>
+typename Tree<DATA>::iterator Tree<DATA>::erase(typename Tree<DATA>::iterator iterator)
+{
   auto result = iterator;
   auto targetNode = iterator; 
   if( iterator.child() != end()  ) // has children 
     {
-      std::cout << "REPL with child " << *(iterator.child()) << std::endl; 
-      
       auto childNode = iterator.child();
       std::swap( *targetNode, *childNode );
-
-      std::cout << "swapped"<< std::endl; 
 
       // parentnode  adopts children; children recognize new parent 
       auto &children = _children.at(childNode._id);
@@ -64,38 +90,43 @@ typename Tree<DATA>::dfs_iterator Tree<DATA>::erase(typename Tree<DATA>::dfs_ite
       _unused.push(iterator._id);
 
       auto par = iterator.parent();
-      if(par != iterator)
+      if(par != end() && par != iterator)
         _children.at(par._id).erase(iterator._id);
     }
 
-
-  
-  
-  std::cout << "everything alright! returning " << *result << std::endl; 
-
   return result; 
 }
 
 
 template<class DATA>
-typename Tree<DATA>::id_t Tree<DATA>::extend( DATA data )
+typename Tree<DATA>::id_t Tree<DATA>::allocateNode()
 {
-  // replace with "get next node" and use a stack
-  auto result = id_t(_nodes.size());
+  auto result = 0;
   
-  _nodes.push_back( data );
-  _children.push_back( set<id_t>{} );
-  _parent.push_back( result );
+  if(_nodes.size() == size())
+    {
+      result = id_t(_nodes.size());
+      
+      _nodes.resize(_nodes.size() + 1 );
+      _children.push_back( set<id_t>{} );
+      _parent.push_back( result );
+    }
+  else
+    {
+      result = _unused.top();
+      _unused.pop(); 
+    }
   
   return result; 
 }
 
 
 template<class DATA>
-typename Tree<DATA>::dfs_iterator Tree<DATA>::insert( DATA data )
+typename Tree<DATA>::iterator Tree<DATA>::insert( DATA data )
 {
   auto wasEmpty = size() == 0 ;  
-  auto id = extend(data);
+  auto id = allocateNode();
+  _nodes.at(id) = data; 
  
   if(not wasEmpty)
     {
@@ -104,7 +135,7 @@ typename Tree<DATA>::dfs_iterator Tree<DATA>::insert( DATA data )
     }
 
   _root = id;
-  return dfs_iterator(*this, id);
+  return iterator(*this, id);
 }
 
 
@@ -136,25 +167,21 @@ void Tree<DATA>::dumplinks()
 
 
 template<class DATA>
-typename Tree<DATA>::dfs_iterator& Tree<DATA>::dfs_iterator::operator++() {
+typename Tree<DATA>::iterator& Tree<DATA>::iterator::operator++() {
   *this = next();
   return *this;
 }
 
 
 template<class DATA>
-typename Tree<DATA>::dfs_iterator Tree<DATA>::dfs_iterator::next()
+typename Tree<DATA>::iterator Tree<DATA>::iterator::next()
 {
   auto end = _tree.get().end();
-  auto begin = _tree.get().begin();
   auto result = *this;
   auto c = child();
 
-  // cout << "hello?" << std::endl; 
-  
   if( c != end )
     {
-      cout << "has children!"  << std::endl; 
       result = c;
     }
   else
@@ -165,16 +192,14 @@ typename Tree<DATA>::dfs_iterator Tree<DATA>::dfs_iterator::next()
           if(maybeResult.sibling() == end )
             {
               maybeResult = maybeResult.parent();
-              if( maybeResult == begin) // at root 
+              if( maybeResult == end ) // at root 
                 {
-                  cout << "is root!"  << std::endl; 
                   maybeResult = end; 
                   break; 
                 }
             }
           else
             {
-              cout << "has sibling!"  << std::endl; 
               maybeResult = maybeResult.sibling();
               break; 
             }
@@ -188,31 +213,30 @@ typename Tree<DATA>::dfs_iterator Tree<DATA>::dfs_iterator::next()
 
 
 template<class DATA>
-typename Tree<DATA>::dfs_iterator Tree<DATA>::dfs_iterator::child()
+typename Tree<DATA>::iterator Tree<DATA>::iterator::child()
 {
   auto result = _tree.get().end();
   if( not  _tree.get()._children.at(_id).empty() )
     {
       auto iter = _tree.get()._children.at(_id).begin(); 
-      result = dfs_iterator(_tree,  *iter);
+      result = iterator(_tree,  *iter);
     }
   return result; 
 }
 
 
 template<class DATA>
-typename Tree<DATA>::dfs_iterator Tree<DATA>::dfs_iterator::parent()
+typename Tree<DATA>::iterator Tree<DATA>::iterator::parent()
 {
   auto result = _tree.get().end();
   if( _tree.get()._root != _id)
-    result = dfs_iterator(_tree,_tree.get()._parent.at(_id));
+    result = iterator(_tree,_tree.get()._parent.at(_id));
   return result; 
 }
 
 
-
 template<class DATA>
-typename Tree<DATA>::dfs_iterator Tree<DATA>::dfs_iterator::sibling()
+typename Tree<DATA>::iterator Tree<DATA>::iterator::sibling()
 {
   auto result = _tree.get().end();
   
@@ -224,7 +248,7 @@ typename Tree<DATA>::dfs_iterator Tree<DATA>::dfs_iterator::sibling()
       assert(iter != endElem); // must be there
       ++iter;
       if(iter != endElem)       // has another sibling  
-        result = dfs_iterator(_tree, *iter);
+        result = iterator(_tree, *iter);
     }
   
   return result; 
